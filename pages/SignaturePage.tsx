@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import SignatureCanvas from 'react-signature-canvas';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import type { Booking } from '../types';
 import { BookingStatus } from '../types';
 import { useBookings } from '../App';
@@ -150,161 +148,6 @@ const SignaturePage: React.FC = () => {
         }
     }, [bookingId, getBookingById]);
 
-    const generatePDF = async (signedBooking: Booking, unitName: string): Promise<string> => {
-        // Create a temporary div for PDF content
-        const pdfContent = document.createElement('div')
-        pdfContent.style.cssText = `
-            position: fixed;
-            top: -9999px;
-            left: -9999px;
-            width: 210mm;
-            min-height: 297mm;
-            padding: 20mm;
-            background: white;
-            font-family: system-ui, -apple-system, sans-serif;
-            font-size: 14px;
-            line-height: 1.6;
-            color: #333333;
-            direction: rtl;
-            box-sizing: border-box;
-        `
-
-        const formatDate = (date: Date) => {
-            return new Intl.DateTimeFormat('he-IL', {
-                year: 'numeric',
-                month: 'long', 
-                day: 'numeric'
-            }).format(date)
-        }
-
-        // Create PDF HTML content
-        pdfContent.innerHTML = `
-            <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #333; padding-bottom: 20px;">
-                <h1 style="font-size: 28px; margin: 0; font-weight: bold;">אישור הזמנה והסכם אירוח</h1>
-                <h2 style="font-size: 20px; margin: 10px 0 0 0; color: #666;">אחוזת שטרן</h2>
-            </div>
-
-            <div style="margin-bottom: 30px;">
-                <p style="font-size: 16px; margin-bottom: 20px;">
-                    שלום ${signedBooking.customer.fullName},<br/>
-                    שמחנו לקבל את הזמנתכם לאירוח באחוזת שטרן. להלן פרטי ההזמנה והתנאים שאושרו על ידכם:
-                </p>
-            </div>
-
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e5e5e5;">
-                <h3 style="font-size: 18px; font-weight: bold; margin: 0 0 15px 0; color: #333333;">פרטי ההזמנה:</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <p style="margin: 5px 0;"><strong>מספר הזמנה:</strong><br/>${signedBooking.id}</p>
-                    <p style="margin: 5px 0;"><strong>שם האורח:</strong><br/>${signedBooking.customer.fullName}</p>
-                    <p style="margin: 5px 0;"><strong>יחידת האירוח:</strong><br/>${unitName}</p>
-                    <p style="margin: 5px 0;"><strong>תאריך כניסה:</strong><br/>${formatDate(signedBooking.startDate)} (החל מ-15:00)</p>
-                    <p style="margin: 5px 0;"><strong>תאריך יציאה:</strong><br/>${formatDate(signedBooking.endDate)} (עד 11:00)</p>
-                    <p style="margin: 5px 0;"><strong>מספר אורחים:</strong><br/>${signedBooking.adults} מבוגרים, ${signedBooking.children} ילדים</p>
-                </div>
-            </div>
-
-            <h4 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0;">תנאי התשלום:</h4>
-            <p style="margin-bottom: 20px;">
-                <strong>סה"כ עלות האירוח:</strong> ${signedBooking.price.toLocaleString()} ₪<br/>
-                יתרת התשלום תתבצע עם ההגעה למתחם באמצעי התשלום הבאים: אשראי / מזומן / העברה בנקאית.
-            </p>
-
-            <div style="border-top: 2px solid #333; padding-top: 20px; margin-top: 40px;">
-                <h4 style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">הצהרת האורח וחתימה:</h4>
-                <p style="margin-bottom: 15px;">אני מאשר/ת שקראתי והבנתי את כל תנאי ההסכם.</p>
-                
-                <div style="display: flex; justify-content: space-between; align-items: end; margin-top: 30px;">
-                    <div style="flex: 1;">
-                        <p style="margin: 0;"><strong>שם מלא:</strong> ${signedBooking.customer.fullName}</p>
-                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">תאריך חתימה: ${formatDate(signedBooking.signedDate || new Date())}</p>
-                    </div>
-                    <div style="flex: 0 0 200px; text-align: center;">
-                        <div style="border: 1px solid #333; height: 80px; width: 200px; margin: 0 auto; background: white; display: flex; align-items: center; justify-content: center;">
-                            ${signedBooking.signature ? `<img src="${signedBooking.signature}" style="max-width: 190px; max-height: 70px;" />` : '<span style="color: #999;">חתימה</span>'}
-                        </div>
-                        <p style="margin: 5px 0 0 0; font-size: 12px;">חתימת האורח</p>
-                    </div>
-                </div>
-            </div>
-
-            <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
-                <p>מסמך זה נוצר אוטומטית על ידי מערכת ניהול אחוזת שטרן</p>
-                <p>לפניות: info@stern-mansion.co.il | 052-1234567</p>
-            </div>
-        `
-
-        document.body.appendChild(pdfContent)
-
-        // Override any CSS variables that might cause issues
-        const style = document.createElement('style')
-        style.textContent = `
-            #pdf-content * {
-                color: inherit !important;
-                background-color: inherit !important;
-                border-color: inherit !important;
-            }
-            #pdf-content {
-                --tw-bg-opacity: 1 !important;
-                --tw-text-opacity: 1 !important;
-                --tw-border-opacity: 1 !important;
-            }
-        `
-        pdfContent.id = 'pdf-content'
-        document.head.appendChild(style)
-
-        // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 1500))
-
-        // Convert to canvas
-        const canvas = await html2canvas(pdfContent, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            width: 794,
-            height: 1123,
-            logging: false,
-            removeContainer: true,
-            ignoreElements: (element) => {
-                // Skip elements that might have problematic CSS
-                return element.style?.color?.includes('oklch') ||
-                       element.style?.backgroundColor?.includes('oklch') ||
-                       element.style?.borderColor?.includes('oklch')
-            },
-        })
-
-        // Create PDF
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        })
-
-        const imgData = canvas.toDataURL('image/png')
-        const imgWidth = 210
-        const pageHeight = 297
-        const imgHeight = (canvas.height * imgWidth) / canvas.width
-        let heightLeft = imgHeight
-        let position = 0
-
-        // Add first page
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-
-        // Add additional pages if needed
-        while (heightLeft >= 0) {
-            position = heightLeft - imgHeight
-            pdf.addPage()
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-            heightLeft -= pageHeight
-        }
-
-        // Clean up
-        document.body.removeChild(pdfContent)
-        document.head.removeChild(style)
-
-        return pdf.output('datauristring')
-    }
 
     const handleSubmit = async () => {
         if (!booking || !agreed || !typedName.trim() || !signatureData) {
@@ -335,12 +178,12 @@ const SignaturePage: React.FC = () => {
             
             let pdfDataUrl: string;
             try {
-                pdfDataUrl = await generatePDF(signedBooking, unitName);
-                console.log('HTML-based PDF generated successfully');
-            } catch (pdfError) {
-                console.warn('HTML PDF generation failed, using simple PDF fallback:', pdfError);
-                pdfDataUrl = await generateSimplePDF(signedBooking, unitName);
-                console.log('Simple PDF generated successfully');
+                pdfDataUrl = await generateSimplePDF(signedBooking, unitName, true); // Try compressed first
+                console.log('Compressed simple PDF generated successfully');
+            } catch (simpleError) {
+                console.warn('Compressed PDF failed, trying uncompressed:', simpleError);
+                pdfDataUrl = await generateSimplePDF(signedBooking, unitName, false); // Uncompressed fallback
+                console.log('Uncompressed simple PDF generated successfully');
             }
             setPdfGenerated(true);
             
@@ -405,13 +248,14 @@ const SignaturePage: React.FC = () => {
                             )}
                             
                             {EmailService.isConfigured() ? (
-                                <div className="flex items-center justify-center gap-2 text-success">
-                                    <i className="fa-solid fa-envelope"></i>
-                                    <span>{emailSent ? 'מייל נשלח בהצלחה' : 'שולח מייל...'}</span>
+                                <div className={`flex items-center justify-center gap-2 ${emailSent ? 'text-success' : 'text-warning'}`}>
+                                    <i className={`fa-solid ${emailSent ? 'fa-envelope-circle-check' : 'fa-envelope'}`}></i>
+                                    <span>{emailSent ? 'מייל נשלח בהצלחה' : 'שליחת מייל נכשלה'}</span>
                                 </div>
                             ) : (
-                                <div className="text-warning text-xs">
-                                    שירות המייל לא מוגדר - פנו למנהל
+                                <div className="text-info text-xs">
+                                    <i className="fa-solid fa-info-circle mr-1"></i>
+                                    שירות המייל לא מוגדר
                                 </div>
                             )}
                         </div>

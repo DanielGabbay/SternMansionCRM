@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Booking, Unit, BlockedDate } from '../types';
 import { BookingStatus } from '../types';
 import { useBookings } from '../App';
-import PDFGenerator from '../components/PDFGenerator';
+import { generateSimplePDF } from '../utils/simplePDFGenerator';
 
 // --- HELPER FUNCTIONS ---
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -153,6 +153,7 @@ const BookingDetails: React.FC<{ booking: Booking, onEdit: () => void, onClose: 
     const signatureLink = `${appUrl}/#/sign/${booking.id}`;
     const [linkCopied, setLinkCopied] = useState(false);
     const [showQR, setShowQR] = useState(false);
+    const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
 
     const copyLink = () => {
         navigator.clipboard.writeText(signatureLink).then(() => {
@@ -164,6 +165,30 @@ const BookingDetails: React.FC<{ booking: Booking, onEdit: () => void, onClose: 
     // Simple QR code generation using a free API service
     const generateQRCode = () => {
         return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(signatureLink)}`;
+    };
+    
+    // PDF download function
+    const downloadPDF = async () => {
+        if (!booking.signature) return;
+        
+        setIsDownloadingPDF(true);
+        try {
+            const unitName = units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה';
+            const pdfDataUrl = await generateSimplePDF(booking, unitName, true);
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = pdfDataUrl;
+            link.download = `הזמנה_${booking.customer.fullName}_${booking.id}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            alert('שגיאה בהורדת המסמך. אנא נסו שוב.');
+        } finally {
+            setIsDownloadingPDF(false);
+        }
     };
     
     return (
@@ -258,11 +283,24 @@ const BookingDetails: React.FC<{ booking: Booking, onEdit: () => void, onClose: 
                 </button>
                 
                 {booking.status === BookingStatus.Confirmed && booking.signature && (
-                    <PDFGenerator booking={booking} unitName={units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה'}>
-                        <div className="w-full sm:w-auto order-2">
-                            {/* PDF button will be rendered by PDFGenerator */}
-                        </div>
-                    </PDFGenerator>
+                    <button
+                        onClick={downloadPDF}
+                        disabled={isDownloadingPDF}
+                        className="btn btn-secondary btn-sm w-full sm:w-auto order-2"
+                        title="הורד הסכם כ-PDF"
+                    >
+                        {isDownloadingPDF ? (
+                            <>
+                                <span className="loading loading-spinner loading-sm mr-1"></span>
+                                מוריד...
+                            </>
+                        ) : (
+                            <>
+                                <i className="fa-solid fa-file-pdf mr-1"></i>
+                                הורד PDF
+                            </>
+                        )}
+                    </button>
                 )}
                 
                 <button type="button" onClick={onEdit} className="btn btn-primary w-full sm:w-auto order-1 sm:order-3">

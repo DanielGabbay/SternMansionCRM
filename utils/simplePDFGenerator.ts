@@ -1,12 +1,13 @@
 import jsPDF from 'jspdf'
 import type { Booking } from '../types'
 
-export const generateSimplePDF = async (booking: Booking, unitName: string): Promise<string> => {
+export const generateSimplePDF = async (booking: Booking, unitName: string, compress: boolean = false): Promise<string> => {
   try {
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      compress: compress
     })
 
     // Hebrew date formatting
