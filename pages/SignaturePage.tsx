@@ -1,75 +1,80 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import SignatureCanvas from 'react-signature-canvas';
 import type { Booking } from '../types';
 import { BookingStatus } from '../types';
 import { useBookings } from '../App';
+import '../signature-pad.css';
 
 // --- SIGNATURE PAD COMPONENT ---
 const SignaturePad: React.FC<{ onSignatureChange: (isEmpty: boolean, dataUrl: string | null) => void }> = ({ onSignatureChange }) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const isDrawing = useRef(false);
-    const isEmpty = useRef(true);
-
+    const sigPadRef = useRef<SignatureCanvas>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        const resizeCanvas = () => {
-            if (!canvas.parentElement) return;
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = 120; // Fixed height for better mobile experience
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = window.innerWidth < 640 ? 3 : 2; // Thicker lines on mobile
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 640);
         };
-
-        const getCoords = (e: MouseEvent | TouchEvent) => {
-            const rect = canvas.getBoundingClientRect();
-            const clientX = e instanceof MouseEvent ? e.clientX : e.touches[0].clientX;
-            const clientY = e instanceof MouseEvent ? e.clientY : e.touches[0].clientY;
-            return { x: clientX - rect.left, y: clientY - rect.top };
-        };
-
-        const startDrawing = (e: MouseEvent | TouchEvent) => { e.preventDefault(); isDrawing.current = true; const { x, y } = getCoords(e); ctx.beginPath(); ctx.moveTo(x, y); };
-        const draw = (e: MouseEvent | TouchEvent) => { if (!isDrawing.current) return; e.preventDefault(); const { x, y } = getCoords(e); ctx.lineTo(x, y); ctx.stroke(); isEmpty.current = false; };
-        const stopDrawing = () => { if (!isDrawing.current) return; isDrawing.current = false; ctx.closePath(); onSignatureChange(isEmpty.current, canvas.toDataURL()); };
         
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        canvas.addEventListener('mousedown', startDrawing); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDrawing); canvas.addEventListener('mouseleave', stopDrawing);
-        canvas.addEventListener('touchstart', startDrawing, { passive: false }); canvas.addEventListener('touchmove', draw, { passive: false }); canvas.addEventListener('touchend', stopDrawing);
-        
-        return () => {
-            window.removeEventListener('resize', resizeCanvas);
-            canvas.removeEventListener('mousedown', startDrawing); canvas.removeEventListener('mousemove', draw); canvas.removeEventListener('mouseup', stopDrawing); canvas.removeEventListener('mouseleave', stopDrawing);
-            canvas.removeEventListener('touchstart', startDrawing); canvas.removeEventListener('touchmove', draw); canvas.removeEventListener('touchend', stopDrawing);
-        };
-    }, [onSignatureChange]);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+    
+    const handleEnd = () => {
+        if (!sigPadRef.current) return;
+        const isEmpty = sigPadRef.current.isEmpty();
+        const dataUrl = isEmpty ? null : sigPadRef.current.toDataURL('image/png', 1.0);
+        console.log('Signature ended:', { isEmpty, hasData: !!dataUrl });
+        onSignatureChange(isEmpty, dataUrl);
+    };
 
     const handleClear = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        isEmpty.current = true;
+        if (!sigPadRef.current) return;
+        sigPadRef.current.clear();
         onSignatureChange(true, null);
     };
 
+    // Calculate canvas dimensions based on container
+    const getCanvasWidth = () => {
+        if (containerRef.current) {
+            const containerWidth = containerRef.current.offsetWidth;
+            return Math.min(containerWidth - 4, 600); // Max width 600px, minus border
+        }
+        return isMobile ? 350 : 500;
+    };
+
     return (
-        <div className="w-full">
-            <canvas ref={canvasRef} className="bg-base-200 rounded-md w-full touch-none border-2 border-base-300" 
-                    style={{ height: '120px', minHeight: '120px' }}></canvas>
-            <button type="button" onClick={handleClear} 
-                    className="btn btn-link btn-xs p-0 h-auto min-h-0 mt-2 text-base-content/60 hover:text-base-content">
-                <i className="fa-solid fa-eraser mr-1"></i>
-                נקה חתימה
-            </button>
+        <div className="w-full" ref={containerRef}>
+            <div className="border-2 border-base-300 rounded-md bg-base-200 overflow-hidden touch-none">
+                <SignatureCanvas
+                    ref={sigPadRef}
+                    onEnd={handleEnd}
+                    canvasProps={{
+                        width: getCanvasWidth(),
+                        height: isMobile ? 140 : 120,
+                        className: 'signature-canvas w-full'
+                    }}
+                    backgroundColor="#f3f4f6"
+                    penColor="#1f2937"
+                    minWidth={isMobile ? 1.5 : 0.8}
+                    maxWidth={isMobile ? 3.5 : 2.5}
+                    throttle={16}
+                    velocityFilterWeight={0.7}
+                    dotSize={isMobile ? 1.5 : 1}
+                />
+            </div>
+            <div className="flex items-center justify-between mt-2">
+                <button type="button" onClick={handleClear} 
+                        className="btn btn-link btn-xs p-0 h-auto min-h-0 text-base-content/60 hover:text-base-content">
+                    <i className="fa-solid fa-eraser mr-1"></i>
+                    נקה חתימה
+                </button>
+                <span className="text-xs text-base-content/50">
+                    {isMobile ? 'חתמו באצבע' : 'חתמו בעכבר או באצבע'}
+                </span>
+            </div>
         </div>
     );
 };
