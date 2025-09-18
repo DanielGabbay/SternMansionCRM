@@ -77,26 +77,71 @@ const BookingForm: React.FC<{
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-                <FormField label="יחידת אירוח"><select name="unitId" value={formData.unitId} onChange={handleChange} className="select select-bordered w-full"><option disabled>בחר יחידה</option>{units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></FormField>
-                <FormField label="מספר מבוגרים"><input type="number" name="adults" value={formData.adults} onChange={handleChange} className="input input-bordered w-full" /></FormField>
-                <FormField label="תאריך כניסה"><input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="input input-bordered w-full" /></FormField>
-                <FormField label="מספר ילדים"><input type="number" name="children" value={formData.children} onChange={handleChange} className="input input-bordered w-full" /></FormField>
-                <FormField label="תאריך יציאה"><input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="input input-bordered w-full" /></FormField>
-                <FormField label="מחיר סופי"><input type="number" name="price" value={formData.price} onChange={handleChange} className="input input-bordered w-full" /></FormField>
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <div className="space-y-4">
+                <FormField label="יחידת אירוח">
+                    <select name="unitId" value={formData.unitId} onChange={handleChange} className="select select-bordered w-full">
+                        <option disabled>בחר יחידה</option>
+                        {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    </select>
+                </FormField>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField label="מספר מבוגרים">
+                        <input type="number" name="adults" value={formData.adults} onChange={handleChange} 
+                               className="input input-bordered w-full" min="1" />
+                    </FormField>
+                    <FormField label="מספר ילדים">
+                        <input type="number" name="children" value={formData.children} onChange={handleChange} 
+                               className="input input-bordered w-full" min="0" />
+                    </FormField>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField label="תאריך כניסה">
+                        <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} 
+                               className="input input-bordered w-full" />
+                    </FormField>
+                    <FormField label="תאריך יציאה">
+                        <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} 
+                               className="input input-bordered w-full" />
+                    </FormField>
+                </div>
+                <FormField label="מחיר סופי">
+                    <input type="number" name="price" value={formData.price} onChange={handleChange} 
+                           className="input input-bordered w-full" min="0" />
+                </FormField>
             </div>
             <div className="divider pt-2">פרטי לקוח</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-                <FormField label="שם מלא"><input type="text" name="customerFullName" value={formData.customerFullName} onChange={handleChange} className="input input-bordered w-full" /></FormField>
-                <FormField label="טלפון"><input type="tel" name="customerPhone" value={formData.customerPhone} onChange={handleChange} className="input input-bordered w-full" /></FormField>
-                <FormField label="אימייל"><input type="email" name="customerEmail" value={formData.customerEmail} onChange={handleChange} className="input input-bordered w-full" /></FormField>
-                <FormField label="תעודת זהות"><input type="text" name="customerIdNumber" value={formData.customerIdNumber} onChange={handleChange} className="input input-bordered w-full" /></FormField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="שם מלא">
+                    <input type="text" name="customerFullName" value={formData.customerFullName} onChange={handleChange} 
+                           className="input input-bordered w-full" />
+                </FormField>
+                <FormField label="טלפון">
+                    <input type="tel" name="customerPhone" value={formData.customerPhone} onChange={handleChange} 
+                           className="input input-bordered w-full" />
+                </FormField>
             </div>
-            <FormField label="הערות פנימיות"><textarea name="internalNotes" value={formData.internalNotes} onChange={handleChange} rows={3} className="textarea textarea-bordered w-full"></textarea></FormField>
-            <div className="modal-action">
-                <button type="button" onClick={onClose} className="btn btn-ghost">ביטול</button>
-                <button type="submit" className="btn btn-primary">{booking ? 'עדכון הזמנה' : 'שמור ושלח הסכם'}</button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="אימייל">
+                    <input type="email" name="customerEmail" value={formData.customerEmail} onChange={handleChange} 
+                           className="input input-bordered w-full" />
+                </FormField>
+                <FormField label="תעודת זהות">
+                    <input type="text" name="customerIdNumber" value={formData.customerIdNumber} onChange={handleChange} 
+                           className="input input-bordered w-full" />
+                </FormField>
+            </div>
+            <FormField label="הערות פנימיות">
+                <textarea name="internalNotes" value={formData.internalNotes} onChange={handleChange} 
+                          rows={3} className="textarea textarea-bordered w-full"></textarea>
+            </FormField>
+            <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-4">
+                <button type="button" onClick={onClose} className="btn btn-ghost w-full sm:w-auto order-2 sm:order-1">
+                    ביטול
+                </button>
+                <button type="submit" className="btn btn-primary w-full sm:w-auto order-1 sm:order-2">
+                    {booking ? 'עדכון הזמנה' : 'שמור ושלח הסכם'}
+                </button>
             </div>
         </form>
     );
@@ -115,44 +160,82 @@ const BookingDetails: React.FC<{ booking: Booking, onEdit: () => void, onClose: 
     };
     
     return (
-        <div className="space-y-4">
-            <div className="flex justify-between items-start">
-                <div>
-                    <h3 className="text-xl font-bold">{booking.customer.fullName}</h3>
-                    <p className="text-sm text-base-content/70">{booking.customer.phone} | {booking.customer.email}</p>
+        <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+                <div className="flex-1">
+                    <h3 className="text-lg sm:text-xl font-bold">{booking.customer.fullName}</h3>
+                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 text-sm text-base-content/70">
+                        <span>{booking.customer.phone}</span>
+                        <span className="hidden sm:inline">|</span>
+                        <span>{booking.customer.email}</span>
+                    </div>
                 </div>
                 <StatusBadge status={booking.status} />
             </div>
             
-            <div className="grid grid-cols-2 gap-4 text-sm p-4 bg-base-200 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm p-4 bg-base-200 rounded-lg">
                 <div><strong>יחידת אירוח:</strong> {units.find(u => u.id === booking.unitId)?.name}</div>
-                <div><strong>תאריכים:</strong> {booking.startDate.toLocaleDateString('he-IL')} - {booking.endDate.toLocaleDateString('he-IL')}</div>
+                <div><strong>תאריכים:</strong> <span className="block sm:inline">{booking.startDate.toLocaleDateString('he-IL')} - {booking.endDate.toLocaleDateString('he-IL')}</span></div>
                 <div><strong>אורחים:</strong> {booking.adults} מבוגרים, {booking.children} ילדים</div>
                 <div><strong>מחיר:</strong> {booking.price.toLocaleString()} ₪</div>
             </div>
 
-            {booking.internalNotes && <div className="text-sm"><strong>הערות פנימיות:</strong><p className="p-2 bg-base-200 rounded-lg mt-1">{booking.internalNotes}</p></div>}
+            {booking.internalNotes && (
+                <div className="text-sm">
+                    <strong>הערות פנימיות:</strong>
+                    <p className="p-3 bg-base-200 rounded-lg mt-2">{booking.internalNotes}</p>
+                </div>
+            )}
 
             {booking.status === BookingStatus.Pending && (
-                <div role="alert" className="alert alert-info mt-4">
-                    <i className="fa-solid fa-circle-info fa-lg"></i>
-                    <div>
+                <div role="alert" className="alert alert-info">
+                    <i className="fa-solid fa-circle-info fa-lg flex-shrink-0"></i>
+                    <div className="flex-1">
                         <h3 className="font-bold">ההזמנה ממתינה לחתימת הלקוח.</h3>
-                        <div className="form-control mt-2"><div className="join w-full"><input type="text" readOnly value={signatureLink} className="input input-bordered join-item w-full text-xs" /><button onClick={copyLink} className="btn btn-secondary join-item">{linkCopied ? 'הועתק!' : 'העתק'}</button></div></div>
+                        <div className="form-control mt-3">
+                            <div className="join w-full">
+                                <input type="text" readOnly value={signatureLink} className="input input-bordered join-item w-full text-xs" />
+                                <button onClick={copyLink} className="btn btn-secondary join-item flex-shrink-0">
+                                    {linkCopied ? 'הועתק!' : 'העתק'}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                            <button 
+                                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`שלום ${booking.customer.fullName}, קישור לחתימה על הסכם האירוח: ${signatureLink}`)}`)}
+                                className="btn btn-success btn-sm flex-1 sm:flex-none"
+                                title="שלח בוואטסאפ"
+                            >
+                                <i className="fa-brands fa-whatsapp"></i>
+                                וואטסאפ
+                            </button>
+                            <button 
+                                onClick={() => window.open(`mailto:${booking.customer.email}?subject=${encodeURIComponent('הסכם אירוח - אחוזת שטרן')}&body=${encodeURIComponent(`שלום ${booking.customer.fullName},\n\nבמצורף קישור לחתימה על הסכם האירוח:\n${signatureLink}\n\nבברכה,\nאחוזת שטרן`)}`)}
+                                className="btn btn-info btn-sm flex-1 sm:flex-none"
+                                title="שלח במייל"
+                            >
+                                <i className="fa-solid fa-envelope"></i>
+                                מייל
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {booking.status === BookingStatus.Confirmed && (
-                 <div role="alert" className="alert alert-success mt-4">
-                    <i className="fa-solid fa-circle-check fa-lg"></i>
+                 <div role="alert" className="alert alert-success">
+                    <i className="fa-solid fa-circle-check fa-lg flex-shrink-0"></i>
                     <span>ההסכם נחתם בתאריך {booking.signedDate?.toLocaleDateString('he-IL')}.</span>
                 </div>
             )}
             
-            <div className="modal-action">
-                <button type="button" onClick={onClose} className="btn btn-ghost">סגור</button>
-                <button type="button" onClick={onEdit} className="btn btn-primary">ערוך הזמנה</button>
+            <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-4">
+                <button type="button" onClick={onClose} className="btn btn-ghost w-full sm:w-auto order-2 sm:order-1">
+                    סגור
+                </button>
+                <button type="button" onClick={onEdit} className="btn btn-primary w-full sm:w-auto order-1 sm:order-2">
+                    ערוך הזמנה
+                </button>
             </div>
         </div>
     );
@@ -254,45 +337,62 @@ const DashboardPage: React.FC = () => {
     }
 
     return (
-        <div className="p-4 lg:p-8">
-            <header className="navbar bg-base-100 rounded-box shadow-sm mb-6">
-                <div className="navbar-start">
-                    <div className="text-lg sm:text-xl font-bold">יומן אירוח - אחוזת שטרן</div>
+        <div className="p-2 sm:p-4 lg:p-8">
+            {/* Mobile-first responsive header */}
+            <header className="navbar bg-base-100 rounded-box shadow-sm mb-4 sm:mb-6 min-h-16 px-2 sm:px-4">
+                <div className="navbar-start flex-1">
+                    <div className="text-base sm:text-lg lg:text-xl font-bold truncate">יומן אירוח - אחוזת שטרן</div>
                 </div>
-                <div className="navbar-end gap-2">
-                     <Link to="/settings" className="btn btn-ghost btn-circle" aria-label="הגדרות">
-                        <i className="fa-solid fa-gear text-xl"></i>
+                <div className="navbar-end gap-1 sm:gap-2 flex-shrink-0">
+                     <Link to="/settings" className="btn btn-ghost btn-circle btn-sm sm:btn-md" aria-label="הגדרות">
+                        <i className="fa-solid fa-gear text-lg sm:text-xl"></i>
                     </Link>
-                    <div className="divider divider-horizontal mx-0"></div>
-                    <button onClick={() => openModal('block')} className="btn btn-neutral btn-sm md:btn-md">
-                        <i className="fa-solid fa-lock"></i>
-                        <span className="hidden sm:inline">חסום תאריכים</span>
+                    <div className="divider divider-horizontal mx-0 hidden sm:flex"></div>
+                    <button onClick={() => openModal('block')} className="btn btn-neutral btn-sm sm:btn-md">
+                        <i className="fa-solid fa-lock text-sm sm:text-base"></i>
+                        <span className="hidden md:inline">חסום תאריכים</span>
+                        <span className="inline md:hidden text-xs">חסום</span>
                     </button>
-                    <button onClick={() => openModal('new')} className="btn btn-primary btn-sm md:btn-md">
-                        <i className="fa-solid fa-plus"></i>
-                        <span className="hidden sm:inline">הוסף הזמנה</span>
+                    <button onClick={() => openModal('new')} className="btn btn-primary btn-sm sm:btn-md">
+                        <i className="fa-solid fa-plus text-sm sm:text-base"></i>
+                        <span className="hidden md:inline">הוסף הזמנה</span>
+                        <span className="inline md:hidden text-xs">הוסף</span>
                     </button>
                 </div>
             </header>
             
+            {/* Mobile-optimized month navigation */}
             <div className="card bg-base-100 shadow-sm mb-4">
-              <div className="card-body p-4 flex-row justify-between items-center">
-                <div className="join"><button onClick={() => changeMonth(-1)} className="join-item btn">«</button><button className="join-item btn btn-disabled text-base-content no-animation capitalize">{currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}</button><button onClick={() => changeMonth(1)} className="join-item btn">»</button></div>
+              <div className="card-body p-3 sm:p-4 flex-row justify-center items-center">
+                <div className="join">
+                    <button onClick={() => changeMonth(-1)} className="join-item btn btn-sm sm:btn-md">
+                        <i className="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button className="join-item btn btn-sm sm:btn-md btn-disabled text-base-content no-animation capitalize min-w-32 sm:min-w-40">
+                        {currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}
+                    </button>
+                    <button onClick={() => changeMonth(1)} className="join-item btn btn-sm sm:btn-md">
+                        <i className="fa-solid fa-chevron-left"></i>
+                    </button>
+                </div>
               </div>
             </div>
 
+            {/* Responsive calendar table */}
             <div className="overflow-x-auto rounded-box shadow-sm bg-base-100">
-                <table className="table table-zebra table-pin-rows table-pin-cols table-sm w-full border-collapse">
+                <table className="table table-zebra table-pin-rows table-pin-cols w-full border-collapse" style={{ minWidth: '800px' }}>
                     <thead>
                         <tr>
-                            <th className="sticky right-0 bg-base-300 z-20">יחידה</th>
+                            <th className="sticky right-0 bg-base-300 z-20 min-w-24 sm:min-w-32 text-sm sm:text-base">יחידה</th>
                             {Array.from({ length: getDaysInMonth(year, month) }, (_, i) => i + 1).map(day => {
                                 const d = new Date(year, month, day);
                                 const isWeekend = d.getDay() === 5 || d.getDay() === 6;
                                 return (
-                                <th key={day} className={`text-center ${isWeekend ? 'bg-base-200' : 'bg-base-100'}`}>
-                                    <div className="font-normal text-xs text-base-content/60">{d.toLocaleDateString('he-IL', { weekday: 'short' })}</div>
-                                    <div>{day}</div>
+                                <th key={day} className={`text-center min-w-12 sm:min-w-16 ${isWeekend ? 'bg-base-200' : 'bg-base-100'}`}>
+                                    <div className="font-normal text-xs sm:text-sm text-base-content/60">
+                                        {d.toLocaleDateString('he-IL', { weekday: 'short' })}
+                                    </div>
+                                    <div className="text-sm sm:text-base font-semibold">{day}</div>
                                 </th>
                             )})}
                         </tr>
@@ -300,7 +400,9 @@ const DashboardPage: React.FC = () => {
                     <tbody>
                         {units.map(unit => (
                             <tr key={unit.id}>
-                                <th className="sticky right-0 bg-base-100 z-10">{unit.name}</th>
+                                <th className="sticky right-0 bg-base-100 z-10 text-sm sm:text-base font-semibold p-2 sm:p-3">
+                                    <div className="truncate">{unit.name}</div>
+                                </th>
                                 {Array.from({ length: getDaysInMonth(year, month) }, (_, i) => {
                                     const day = i + 1;
                                     const date = new Date(year, month, day);
@@ -315,13 +417,38 @@ const DashboardPage: React.FC = () => {
                                         if ('status' in event.data) {
                                             const booking = event.data;
                                             const bgColor = getBookingColorClass(booking.status);
-                                            return <td key={day} className={`p-0 align-top cursor-pointer ${bgColor} ${textColor}`} onClick={() => openModal('details', booking)}><div className="p-1 h-full">{isStart && <span className="text-xs font-semibold truncate block whitespace-nowrap">{booking.customer.fullName}</span>}</div></td>;
+                                            return (
+                                                <td key={day} className={`p-0 align-top cursor-pointer ${bgColor} ${textColor} h-12 sm:h-16`} 
+                                                    onClick={() => openModal('details', booking)}>
+                                                    <div className="p-1 sm:p-2 h-full flex items-center justify-center">
+                                                        {isStart && (
+                                                            <span className="text-xs sm:text-sm font-semibold truncate block whitespace-nowrap text-center">
+                                                                {booking.customer.fullName}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            );
                                         } else { // 'blocked'
                                             const blocked = event.data;
-                                            return <td key={day} className={`p-0 align-top bg-gray-500 ${textColor}`}><div className="p-1 h-full">{isStart && <span className="text-xs font-semibold truncate block whitespace-nowrap">{blocked.reason}</span>}</div></td>;
+                                            return (
+                                                <td key={day} className={`p-0 align-top bg-gray-500 ${textColor} h-12 sm:h-16`}>
+                                                    <div className="p-1 sm:p-2 h-full flex items-center justify-center">
+                                                        {isStart && (
+                                                            <span className="text-xs sm:text-sm font-semibold truncate block whitespace-nowrap text-center">
+                                                                {blocked.reason}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            );
                                         }
                                     }
-                                    return <td key={day} className="hover:bg-green-100 cursor-pointer transition-colors" onClick={() => openModal('new', { unitId: unit.id, date })}></td>
+                                    return (
+                                        <td key={day} className="hover:bg-green-100 cursor-pointer transition-colors h-12 sm:h-16 border border-base-200" 
+                                            onClick={() => openModal('new', { unitId: unit.id, date })}>
+                                        </td>
+                                    );
                                 })}
                             </tr>
                         ))}
@@ -330,8 +457,12 @@ const DashboardPage: React.FC = () => {
             </div>
 
             <dialog ref={modalRef} className="modal">
-                <div className="modal-box w-11/12 max-w-3xl">
-                    <form method="dialog"><button className="btn btn-sm btn-circle btn-ghost absolute left-2 top-2"><i className="fa-solid fa-xmark"></i></button></form>
+                <div className="modal-box w-11/12 max-w-md sm:max-w-lg md:max-w-3xl">
+                    <form method="dialog">
+                        <button className="btn btn-sm btn-circle btn-ghost absolute left-2 top-2">
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    </form>
                     {modalData && renderModalContent()}
                 </div>
                  <form method="dialog" className="modal-backdrop"><button>close</button></form>

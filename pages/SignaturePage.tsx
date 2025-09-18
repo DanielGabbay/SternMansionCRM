@@ -20,9 +20,9 @@ const SignaturePad: React.FC<{ onSignatureChange: (isEmpty: boolean, dataUrl: st
             if (!canvas.parentElement) return;
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width;
-            canvas.height = 150;
+            canvas.height = 120; // Fixed height for better mobile experience
             ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = window.innerWidth < 640 ? 3 : 2; // Thicker lines on mobile
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
         };
@@ -62,22 +62,30 @@ const SignaturePad: React.FC<{ onSignatureChange: (isEmpty: boolean, dataUrl: st
     };
 
     return (
-        <div>
-            <canvas ref={canvasRef} className="bg-base-200 rounded-md w-full touch-none"></canvas>
-            <button type="button" onClick={handleClear} className="btn btn-link btn-xs p-0 h-auto min-h-0 mt-1">נקה חתימה</button>
+        <div className="w-full">
+            <canvas ref={canvasRef} className="bg-base-200 rounded-md w-full touch-none border-2 border-base-300" 
+                    style={{ height: '120px', minHeight: '120px' }}></canvas>
+            <button type="button" onClick={handleClear} 
+                    className="btn btn-link btn-xs p-0 h-auto min-h-0 mt-2 text-base-content/60 hover:text-base-content">
+                <i className="fa-solid fa-eraser mr-1"></i>
+                נקה חתימה
+            </button>
         </div>
     );
 };
 
 // --- AGREEMENT TEXT GENERATOR ---
 const AgreementText: React.FC<{ booking: Booking, unitName: string }> = ({ booking, unitName }) => (
-    <div className="prose prose-sm max-w-none text-base-content/80 leading-relaxed">
-        <p>שלום {booking.customer.fullName},<br/> שמחנו לקבל את הזמנתכם לאירוח באחוזת שטרן. אנא קרא/י בעיון את פרטי ההזמנה והתנאים המצורפים, ואשר/י את ההסכם באמצעות חתימה דיגיטלית בתחתית המסמך.</p>
+    <div className="prose prose-sm sm:prose-base max-w-none text-base-content/80 leading-relaxed">
+        <p className="text-base sm:text-lg">
+            שלום {booking.customer.fullName},<br/> 
+            שמחנו לקבל את הזמנתכם לאירוח באחוזת שטרן. אנא קרא/י בעיון את פרטי ההזמנה והתנאים המצורפים, ואשר/י את ההסכם באמצעות חתימה דיגיטלית בתחתית המסמך.
+        </p>
         
-        <div className="p-4 bg-base-200 rounded-lg not-prose space-y-2">
-            <h3 className="font-bold text-base">1. פרטי ההזמנה:</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                <p><strong>מספר הזמנה:</strong> {booking.id}</p>
+        <div className="p-4 sm:p-6 bg-base-200 rounded-lg not-prose space-y-3 sm:space-y-4">
+            <h3 className="font-bold text-base sm:text-lg">1. פרטי ההזמנה:</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 text-sm sm:text-base">
+                <p><strong>מספר הזמנה:</strong> <span className="break-all">{booking.id}</span></p>
                 <p><strong>שם האורח:</strong> {booking.customer.fullName}</p>
                 <p><strong>יחידת האירוח:</strong> {unitName}</p>
                 <p><strong>תאריך כניסה:</strong> {booking.startDate.toLocaleDateString('he-IL')} (החל מ-15:00)</p>
@@ -86,14 +94,27 @@ const AgreementText: React.FC<{ booking: Booking, unitName: string }> = ({ booki
             </div>
         </div>
 
-        <h4>2. תנאי התשלום:</h4>
-        <p><strong>סה"כ עלות האירוח:</strong> {booking.price.toLocaleString()} ₪. יתרת התשלום תתבצע עם ההגעה למתחם באמצעי התשלום הבאים: אשראי / מזומן / העברה בנקאית.</p>
+        <h4 className="text-base sm:text-lg font-bold mt-6">2. תנאי התשלום:</h4>
+        <p className="text-sm sm:text-base">
+            <strong>סה"כ עלות האירוח:</strong> {booking.price.toLocaleString()} ₪. 
+            יתרת התשלום תתבצע עם ההגעה למתחם באמצעי התשלום הבאים: אשראי / מזומן / העברה בנקאית.
+        </p>
         
-        <h4>3. כללי אירוח והתנהלות במתחם:</h4>
-        <ul><li>הכניסה החל מהשעה 15:00 והיציאה עד השעה 11:00.</li><li>העישון בתוך הסוויטות אסור בהחלט.</li><li>השימוש במתקני הבריכה והג'קוזי הינו באחריות האורחים בלבד.</li><li>אין להשמיע מוזיקה רועשת או להקים רעש בשעות המנוחה.</li><li>לא תתאפשר כניסת אורחים נוספים למתחם מעבר למצוין בהזמנה.</li></ul>
+        <h4 className="text-base sm:text-lg font-bold mt-6">3. כללי אירוח והתנהלות במתחם:</h4>
+        <ul className="text-sm sm:text-base space-y-2">
+            <li>הכניסה החל מהשעה 15:00 והיציאה עד השעה 11:00.</li>
+            <li>העישון בתוך הסוויטות אסור בהחלט.</li>
+            <li>השימוש במתקני הבריכה והג'קוזי הינו באחריות האורחים בלבד.</li>
+            <li>אין להשמיע מוזיקה רועשת או להקים רעש בשעות המנוחה.</li>
+            <li>לא תתאפשر כניסת אורחים נוספים למתחם מעבר למצוין בהזמנה.</li>
+        </ul>
 
-        <h4>4. מדיניות ביטולים:</h4>
-        <ul><li>הודעת ביטול עד 14 ימים לפני מועד האירוח: ללא דמי ביטול.</li><li>הודעת ביטול בין 14 ל-7 ימים לפני מועד האירוח: חיוב של 50% מעלות ההזמנה.</li><li>הודעת ביטול בפחות מ-7 ימים לפני מועד האירוח או אי-הגעה: חיוב מלא.</li></ul>
+        <h4 className="text-base sm:text-lg font-bold mt-6">4. מדיניות ביטולים:</h4>
+        <ul className="text-sm sm:text-base space-y-2">
+            <li>הודעת ביטול עד 14 ימים לפני מועד האירוח: ללא דמי ביטול.</li>
+            <li>הודעת ביטול בין 14 ל-7 ימים לפני מועד האירוח: חיוב של 50% מעלות ההזמנה.</li>
+            <li>הודעת ביטול בפחות מ-7 ימים לפני מועד האירוח או אי-הגעה: חיוב מלא.</li>
+        </ul>
     </div>
 );
 
@@ -148,24 +169,42 @@ const SignaturePage: React.FC = () => {
     const unitName = units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה';
 
     return (
-        <div className="bg-base-200 min-h-screen p-4 sm:p-6 md:p-8 flex justify-center items-center">
-            <div className="card w-full max-w-4xl bg-base-100 shadow-xl">
-                <div className="card-body p-6 sm:p-8 md:p-10">
-                    <header className="text-center border-b border-base-300 pb-6 mb-6">
-                        <h1 className="text-2xl sm:text-3xl font-bold">אישור הזמנה והסכם אירוח</h1>
-                        <p className="text-lg sm:text-xl font-light text-base-content/70 mt-2">אחוזת שטרן</p>
+        <div className="bg-base-200 min-h-screen p-3 sm:p-6 md:p-8 flex justify-center items-start sm:items-center">
+            <div className="card w-full max-w-4xl bg-base-100 shadow-xl my-4 sm:my-0">
+                <div className="card-body p-4 sm:p-6 md:p-8 lg:p-10">
+                    <header className="text-center border-b border-base-300 pb-4 sm:pb-6 mb-4 sm:mb-6">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight">אישור הזמנה והסכם אירוח</h1>
+                        <p className="text-base sm:text-lg md:text-xl font-light text-base-content/70 mt-2">אחוזת שטרן</p>
                     </header>
                     
-                    <main>
+                    <main className="space-y-4 sm:space-y-6">
                         <AgreementText booking={booking} unitName={unitName} />
-                        <div className="divider mt-8 mb-6">הצהרת האורח וחתימה</div>
-                        <div className="space-y-6 bg-blue-50/50 p-6 rounded-lg">
-                            <div className="form-control w-full"><label className="label"><span className="label-text">שם מלא (כהצהרה):</span></label><input type="text" value={typedName} onChange={(e) => setTypedName(e.target.value)} className="input input-bordered w-full" /></div>
-                            <div className="form-control w-full"><label className="label"><span className="label-text">חתימה:</span></label><SignaturePad onSignatureChange={(isEmpty, data) => setSignatureData(isEmpty ? null : data)} /></div>
-                            <div className="form-control"><label className="label cursor-pointer justify-start gap-3"><input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="checkbox checkbox-primary"/><span>אני מאשר/ת שקראתי והבנתי את כל תנאי ההסכם.</span></label></div>
+                        <div className="divider mt-6 sm:mt-8 mb-4 sm:mb-6">הצהרת האורח וחתימה</div>
+                        <div className="space-y-4 sm:space-y-6 bg-blue-50/50 p-4 sm:p-6 rounded-lg">
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text font-semibold">שם מלא (כהצהרה):</span>
+                                </label>
+                                <input type="text" value={typedName} onChange={(e) => setTypedName(e.target.value)} 
+                                       className="input input-bordered w-full text-base" />
+                            </div>
+                            <div className="form-control w-full">
+                                <label className="label">
+                                    <span className="label-text font-semibold">חתימה:</span>
+                                </label>
+                                <SignaturePad onSignatureChange={(isEmpty, data) => setSignatureData(isEmpty ? null : data)} />
+                            </div>
+                            <div className="form-control">
+                                <label className="label cursor-pointer justify-start gap-3 py-4">
+                                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} 
+                                           className="checkbox checkbox-primary flex-shrink-0"/>
+                                    <span className="label-text text-base leading-relaxed">אני מאשר/ת שקראתי והבנתי את כל תנאי ההסכם.</span>
+                                </label>
+                            </div>
                         </div>
-                        <div className="card-actions justify-center mt-8">
-                            <button onClick={handleSubmit} disabled={!agreed || !typedName.trim() || !signatureData} className="btn btn-success btn-lg text-white">
+                        <div className="card-actions justify-center mt-6 sm:mt-8">
+                            <button onClick={handleSubmit} disabled={!agreed || !typedName.trim() || !signatureData} 
+                                    className="btn btn-success btn-lg w-full sm:w-auto text-white text-base sm:text-lg px-8">
                                 אשר וחתום על ההזמנה
                             </button>
                         </div>
