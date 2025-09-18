@@ -5,6 +5,7 @@ import { BookingStatus } from './types';
 import DashboardPage from './pages/DashboardPage';
 import SignaturePage from './pages/SignaturePage';
 import SettingsPage from './pages/SettingsPage';
+import { Analytics } from '@vercel/analytics/react';
 
 // --- INITIAL DATA ---
 const INITIAL_UNITS: Unit[] = [
@@ -187,6 +188,7 @@ const App: React.FC = () => {
 
   return (
     <BookingContext.Provider value={contextValue}>
+      <Analytics />
       <div className="bg-base-200 min-h-screen text-base-content font-sans">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
