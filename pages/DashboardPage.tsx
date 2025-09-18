@@ -151,12 +151,18 @@ const BookingDetails: React.FC<{ booking: Booking, onEdit: () => void, onClose: 
     const { units, appUrl } = useBookings();
     const signatureLink = `${appUrl}/#/sign/${booking.id}`;
     const [linkCopied, setLinkCopied] = useState(false);
+    const [showQR, setShowQR] = useState(false);
 
     const copyLink = () => {
         navigator.clipboard.writeText(signatureLink).then(() => {
             setLinkCopied(true);
             setTimeout(() => setLinkCopied(false), 2000);
         });
+    };
+
+    // Simple QR code generation using a free API service
+    const generateQRCode = () => {
+        return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(signatureLink)}`;
     };
     
     return (
@@ -217,7 +223,23 @@ const BookingDetails: React.FC<{ booking: Booking, onEdit: () => void, onClose: 
                                 <i className="fa-solid fa-envelope"></i>
                                 מייל
                             </button>
+                            <button 
+                                onClick={() => setShowQR(!showQR)}
+                                className="btn btn-neutral btn-sm flex-1 sm:flex-none"
+                                title="הצג QR Code"
+                            >
+                                <i className="fa-solid fa-qrcode"></i>
+                                QR
+                            </button>
                         </div>
+                        {showQR && (
+                            <div className="mt-4 text-center">
+                                <p className="text-sm text-base-content/70 mb-2">סרוק עם המצלמה לגישה מהירה:</p>
+                                <div className="inline-block p-3 bg-white rounded-lg">
+                                    <img src={generateQRCode()} alt="QR Code for signature link" className="w-32 h-32 sm:w-40 sm:h-40" />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
