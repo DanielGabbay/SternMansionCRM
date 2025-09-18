@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "api/send-email.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "SUPABASE_URL": "@supabase-url",
+    "SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "EMAIL_USER": "@email-user",
+    "EMAIL_PASS": "@email-pass",
+    "EMAIL_HOST": "@email-host",
+    "EMAIL_PORT": "@email-port"
+  }
+}

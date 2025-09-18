@@ -4,7 +4,7 @@ import SignatureCanvas from 'react-signature-canvas';
 import type { Booking } from '../types';
 import { BookingStatus } from '../types';
 import { useBookings } from '../App';
-import { EmailService } from '../services/EmailService';
+import { ServerEmailService } from '../services/ServerEmailService';
 import { generateSimplePDF } from '../utils/simplePDFGenerator';
 import '../signature-pad.css';
 
@@ -188,10 +188,10 @@ const SignaturePage: React.FC = () => {
             setPdfGenerated(true);
             
             // Send email if configured
-            if (EmailService.isConfigured()) {
-                console.log('Sending confirmation email...');
+            if (ServerEmailService.isConfigured()) {
+                console.log('Sending confirmation email via server...');
                 try {
-                    const emailSuccess = await EmailService.sendConfirmationEmail(signedBooking, unitName, pdfDataUrl);
+                    const emailSuccess = await ServerEmailService.sendConfirmationEmail(signedBooking, unitName, pdfDataUrl);
                     console.log('Email sent:', emailSuccess);
                     setEmailSent(emailSuccess);
                 } catch (emailError) {
@@ -200,7 +200,7 @@ const SignaturePage: React.FC = () => {
                     // Don't fail the whole process if email fails
                 }
             } else {
-                console.log('EmailJS not configured, skipping email');
+                console.log('Server email service not configured, skipping email');
             }
             
             console.log('Signature processing completed successfully');
@@ -247,7 +247,7 @@ const SignaturePage: React.FC = () => {
                                 </div>
                             )}
                             
-                            {EmailService.isConfigured() ? (
+                            {ServerEmailService.isConfigured() ? (
                                 <div className={`flex items-center justify-center gap-2 ${emailSent ? 'text-success' : 'text-warning'}`}>
                                     <i className={`fa-solid ${emailSent ? 'fa-envelope-circle-check' : 'fa-envelope'}`}></i>
                                     <span>{emailSent ? 'מייל נשלח בהצלחה' : 'שליחת מייל נכשלה'}</span>
@@ -261,7 +261,7 @@ const SignaturePage: React.FC = () => {
                         </div>
                         
                         <p className="text-sm text-base-content/70 mt-4">
-                            {EmailService.isConfigured() ? 
+                            {ServerEmailService.isConfigured() ? 
                                 'עותק חתום של ההסכם נשלח למייל. נתראה בקרוב!' :
                                 'צרו קשר עם אחוזת שטרן לקבלת המסמך. נתראה בקרוב!'
                             }

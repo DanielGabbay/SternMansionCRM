@@ -101,14 +101,21 @@ npm run build
 3. **הגדר משתני סביבה** עם פרטי החיבור
 4. **הנח את נתונים יסתנכרנו** בין כל המכשירים
 
-### הגדרת EmailJS (אופציונלי - לשליחת PDF במייל):
+### הגדרת מיילים (לשליחת PDF חתום):
+
+#### 🆕 שליחה בצד השרת (מומלץ):
+1. **קרא את המדריך**: [SERVER_EMAIL_SETUP.md](./SERVER_EMAIL_SETUP.md)
+2. **הגדר חשבון מייל עסקי** (Gmail/Outlook)
+3. **הוסף משתני סביבה ב-Vercel**: EMAIL_HOST, EMAIL_USER, EMAIL_PASS
+4. **ביטחון מלא** - סיסמאות לא נחשפות בפרונט
+
+#### Legacy - EmailJS (לא מומלץ):
 1. **קרא את המדריך**: [EMAILJS_SETUP.md](./EMAILJS_SETUP.md)
 2. **צור חשבון EmailJS** חינמי ב-[emailjs.com](https://emailjs.com)
-3. **הגדר שירות מייל ותבנית**
-4. **הוסף משתני סביבה** לשליחת מיילים אוטומטית
+3. **הגבלות**: גודל קובץ, בטחון נמוך יותר
 
 **ללא Supabase**: האפליקציה תעבוד עם localStorage (נתונים מקומיים בלבד)  
-**ללא EmailJS**: האפליקציה תעבוד בלי שליחת מיילים אוטומטית
+**ללא הגדרת מיילים**: האפליקציה תעבוד בלי שליחת מיילים אוטומטית
 
 ראה [מדריך מערכת ההסכמים](./AGREEMENT_SYSTEM.md) לפרטים מלאים.
 
