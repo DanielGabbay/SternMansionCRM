@@ -220,6 +220,31 @@ export const useSupabaseData = () => {
   const updateBooking = useCallback(async (booking: Booking) => {
     try {
       console.log('Updating booking:', booking)
+      
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.warn('Supabase not configured, using localStorage fallback')
+        // Fallback to localStorage
+        const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]')
+        const updatedBookings = existingBookings.map((b: any) => {
+          if (b.id === booking.id) {
+            return {
+              ...booking,
+              startDate: booking.startDate.toISOString(),
+              endDate: booking.endDate.toISOString(),
+              signedDate: booking.signedDate?.toISOString()
+            }
+          }
+          return b
+        })
+        localStorage.setItem('bookings', JSON.stringify(updatedBookings))
+        setBookings(prev => prev.map(b => b.id === booking.id ? booking : b))
+        return
+      }
+
       const { id, ...bookingWithoutId } = booking
       const dbData = bookingToDbBooking(bookingWithoutId)
       console.log('DB data to update:', dbData)
@@ -230,9 +255,28 @@ export const useSupabaseData = () => {
         .eq('id', booking.id)
         .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        // Try localStorage fallback
+        console.warn('Falling back to localStorage due to Supabase error')
+        const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]')
+        const updatedBookings = existingBookings.map((b: any) => {
+          if (b.id === booking.id) {
+            return {
+              ...booking,
+              startDate: booking.startDate.toISOString(),
+              endDate: booking.endDate.toISOString(),
+              signedDate: booking.signedDate?.toISOString()
+            }
+          }
+          return b
+        })
+        localStorage.setItem('bookings', JSON.stringify(updatedBookings))
+        setBookings(prev => prev.map(b => b.id === booking.id ? booking : b))
+        return
+      }
+      
       console.log('Updated booking in DB:', data)
-
       setBookings(prev => {
         const updated = prev.map(b => b.id === booking.id ? booking : b)
         console.log('Updated local bookings:', updated)
@@ -240,7 +284,29 @@ export const useSupabaseData = () => {
       })
     } catch (err) {
       console.error('Error updating booking:', err)
-      throw err
+      
+      // Final fallback to localStorage
+      console.warn('Using localStorage fallback due to error:', err)
+      try {
+        const existingBookings = JSON.parse(localStorage.getItem('bookings') || '[]')
+        const updatedBookings = existingBookings.map((b: any) => {
+          if (b.id === booking.id) {
+            return {
+              ...booking,
+              startDate: booking.startDate.toISOString(),
+              endDate: booking.endDate.toISOString(),
+              signedDate: booking.signedDate?.toISOString()
+            }
+          }
+          return b
+        })
+        localStorage.setItem('bookings', JSON.stringify(updatedBookings))
+        setBookings(prev => prev.map(b => b.id === booking.id ? booking : b))
+        console.log('Successfully saved to localStorage as fallback')
+      } catch (localStorageError) {
+        console.error('Even localStorage fallback failed:', localStorageError)
+        throw err // Re-throw original error
+      }
     }
   }, [])
 

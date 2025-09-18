@@ -7,6 +7,7 @@ import type { Booking } from '../types';
 import { BookingStatus } from '../types';
 import { useBookings } from '../App';
 import { EmailService } from '../services/EmailService';
+import { generateSimplePDF } from '../utils/simplePDFGenerator';
 import '../signature-pad.css';
 
 // --- SIGNATURE PAD COMPONENT ---
@@ -163,8 +164,9 @@ const SignaturePage: React.FC = () => {
             font-family: system-ui, -apple-system, sans-serif;
             font-size: 14px;
             line-height: 1.6;
-            color: #333;
+            color: #333333;
             direction: rtl;
+            box-sizing: border-box;
         `
 
         const formatDate = (date: Date) => {
@@ -189,8 +191,8 @@ const SignaturePage: React.FC = () => {
                 </p>
             </div>
 
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                <h3 style="font-size: 18px; font-weight: bold; margin: 0 0 15px 0;">פרטי ההזמנה:</h3>
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #e5e5e5;">
+                <h3 style="font-size: 18px; font-weight: bold; margin: 0 0 15px 0; color: #333333;">פרטי ההזמנה:</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <p style="margin: 5px 0;"><strong>מספר הזמנה:</strong><br/>${signedBooking.id}</p>
                     <p style="margin: 5px 0;"><strong>שם האורח:</strong><br/>${signedBooking.customer.fullName}</p>
@@ -233,8 +235,25 @@ const SignaturePage: React.FC = () => {
 
         document.body.appendChild(pdfContent)
 
+        // Override any CSS variables that might cause issues
+        const style = document.createElement('style')
+        style.textContent = `
+            #pdf-content * {
+                color: inherit !important;
+                background-color: inherit !important;
+                border-color: inherit !important;
+            }
+            #pdf-content {
+                --tw-bg-opacity: 1 !important;
+                --tw-text-opacity: 1 !important;
+                --tw-border-opacity: 1 !important;
+            }
+        `
+        pdfContent.id = 'pdf-content'
+        document.head.appendChild(style)
+
         // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 1500))
 
         // Convert to canvas
         const canvas = await html2canvas(pdfContent, {
@@ -244,6 +263,14 @@ const SignaturePage: React.FC = () => {
             backgroundColor: '#ffffff',
             width: 794,
             height: 1123,
+            logging: false,
+            removeContainer: true,
+            ignoreElements: (element) => {
+                // Skip elements that might have problematic CSS
+                return element.style?.color?.includes('oklch') ||
+                       element.style?.backgroundColor?.includes('oklch') ||
+                       element.style?.borderColor?.includes('oklch')
+            },
         })
 
         // Create PDF
@@ -274,6 +301,7 @@ const SignaturePage: React.FC = () => {
 
         // Clean up
         document.body.removeChild(pdfContent)
+        document.head.removeChild(style)
 
         return pdf.output('datauristring')
     }
@@ -287,6 +315,8 @@ const SignaturePage: React.FC = () => {
         setIsProcessing(true);
         
         try {
+            console.log('Starting signature processing...');
+            
             // Update booking first
             const signedBooking = { 
                 ...booking, 
@@ -295,24 +325,59 @@ const SignaturePage: React.FC = () => {
                 signedDate: new Date() 
             };
             
+            console.log('Updating booking with signed data:', signedBooking);
             await updateBooking(signedBooking);
+            console.log('Booking updated successfully');
             
             // Generate PDF
+            console.log('Generating PDF...');
             const unitName = units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה';
-            const pdfDataUrl = await generatePDF(signedBooking, unitName);
+            
+            let pdfDataUrl: string;
+            try {
+                pdfDataUrl = await generatePDF(signedBooking, unitName);
+                console.log('HTML-based PDF generated successfully');
+            } catch (pdfError) {
+                console.warn('HTML PDF generation failed, using simple PDF fallback:', pdfError);
+                pdfDataUrl = await generateSimplePDF(signedBooking, unitName);
+                console.log('Simple PDF generated successfully');
+            }
             setPdfGenerated(true);
             
             // Send email if configured
             if (EmailService.isConfigured()) {
-                const emailSuccess = await EmailService.sendConfirmationEmail(signedBooking, unitName, pdfDataUrl);
-                setEmailSent(emailSuccess);
+                console.log('Sending confirmation email...');
+                try {
+                    const emailSuccess = await EmailService.sendConfirmationEmail(signedBooking, unitName, pdfDataUrl);
+                    console.log('Email sent:', emailSuccess);
+                    setEmailSent(emailSuccess);
+                } catch (emailError) {
+                    console.error('Email sending failed:', emailError);
+                    setEmailSent(false);
+                    // Don't fail the whole process if email fails
+                }
+            } else {
+                console.log('EmailJS not configured, skipping email');
             }
             
+            console.log('Signature processing completed successfully');
             setIsSigned(true);
             
         } catch (error) {
             console.error('Error processing signature:', error);
-            alert('אירעה שגיאה בעיבוד החתימה. אנא נסו שוב.');
+            console.error('Error details:', {
+                message: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined,
+                error: error
+            });
+            
+            // More detailed error message
+            let errorMessage = 'אירעה שגיאה בעיבוד החתימה.';
+            if (error instanceof Error) {
+                errorMessage += ` פרטים: ${error.message}`;
+            }
+            
+            alert(errorMessage + ' אנא נסו שוב.');
         } finally {
             setIsProcessing(false);
         }
