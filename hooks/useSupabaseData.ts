@@ -4,7 +4,8 @@ import type { Booking, Unit, BlockedDate, BookingStatus } from '../types'
 
 // Helper functions to convert between app types and database types
 const dbBookingToBooking = (dbBooking: any): Booking => ({
-  ...dbBooking,
+  id: dbBooking.id,
+  unitId: dbBooking.unit_id,
   customer: {
     fullName: dbBooking.full_name,
     phone: dbBooking.phone,
@@ -13,6 +14,12 @@ const dbBookingToBooking = (dbBooking: any): Booking => ({
   },
   startDate: new Date(dbBooking.start_date),
   endDate: new Date(dbBooking.end_date),
+  adults: dbBooking.adults,
+  children: dbBooking.children,
+  price: dbBooking.price,
+  status: dbBooking.status,
+  internalNotes: dbBooking.internal_notes,
+  signature: dbBooking.signature,
   signedDate: dbBooking.signed_date ? new Date(dbBooking.signed_date) : undefined,
 })
 
@@ -34,9 +41,11 @@ const bookingToDbBooking = (booking: Omit<Booking, 'id'>) => ({
 })
 
 const dbBlockedDateToBlockedDate = (dbBlockedDate: any): BlockedDate => ({
-  ...dbBlockedDate,
+  id: dbBlockedDate.id,
+  unitId: dbBlockedDate.unit_id,
   startDate: new Date(dbBlockedDate.start_date),
   endDate: new Date(dbBlockedDate.end_date),
+  reason: dbBlockedDate.reason,
 })
 
 const blockedDateToDbBlockedDate = (blockedDate: Omit<BlockedDate, 'id'>) => ({
@@ -57,6 +66,36 @@ export const useSupabaseData = () => {
   // Load initial data
   useEffect(() => {
     loadData()
+  }, [])
+
+  // Real-time subscriptions
+  useEffect(() => {
+    const unitsChannel = supabase
+      .channel('units-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'units' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    const bookingsChannel = supabase
+      .channel('bookings-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    const blockedDatesChannel = supabase
+      .channel('blocked-dates-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'blocked_dates' }, () => {
+        loadData()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(unitsChannel)
+      supabase.removeChannel(bookingsChannel)
+      supabase.removeChannel(blockedDatesChannel)
+    }
   }, [])
 
   const loadData = async () => {
@@ -180,15 +219,25 @@ export const useSupabaseData = () => {
 
   const updateBooking = useCallback(async (booking: Booking) => {
     try {
-      const dbData = bookingToDbBooking(booking)
-      const { error } = await supabase
+      console.log('Updating booking:', booking)
+      const { id, ...bookingWithoutId } = booking
+      const dbData = bookingToDbBooking(bookingWithoutId)
+      console.log('DB data to update:', dbData)
+      
+      const { error, data } = await supabase
         .from('bookings')
         .update(dbData)
         .eq('id', booking.id)
+        .select()
 
       if (error) throw error
+      console.log('Updated booking in DB:', data)
 
-      setBookings(prev => prev.map(b => b.id === booking.id ? booking : b))
+      setBookings(prev => {
+        const updated = prev.map(b => b.id === booking.id ? booking : b)
+        console.log('Updated local bookings:', updated)
+        return updated
+      })
     } catch (err) {
       console.error('Error updating booking:', err)
       throw err
