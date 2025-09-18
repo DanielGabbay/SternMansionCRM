@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Booking, Unit, BlockedDate } from '../types';
 import { BookingStatus } from '../types';
 import { useBookings } from '../App';
+import PDFGenerator from '../components/PDFGenerator';
 
 // --- HELPER FUNCTIONS ---
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -252,10 +253,19 @@ const BookingDetails: React.FC<{ booking: Booking, onEdit: () => void, onClose: 
             )}
             
             <div className="modal-action flex-col sm:flex-row gap-2 sm:gap-4">
-                <button type="button" onClick={onClose} className="btn btn-ghost w-full sm:w-auto order-2 sm:order-1">
+                <button type="button" onClick={onClose} className="btn btn-ghost w-full sm:w-auto order-3 sm:order-1">
                     סגור
                 </button>
-                <button type="button" onClick={onEdit} className="btn btn-primary w-full sm:w-auto order-1 sm:order-2">
+                
+                {booking.status === BookingStatus.Confirmed && booking.signature && (
+                    <PDFGenerator booking={booking} unitName={units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה'}>
+                        <div className="w-full sm:w-auto order-2">
+                            {/* PDF button will be rendered by PDFGenerator */}
+                        </div>
+                    </PDFGenerator>
+                )}
+                
+                <button type="button" onClick={onEdit} className="btn btn-primary w-full sm:w-auto order-1 sm:order-3">
                     ערוך הזמנה
                 </button>
             </div>

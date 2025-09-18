@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import SignatureCanvas from 'react-signature-canvas';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import type { Booking } from '../types';
 import { BookingStatus } from '../types';
 import { useBookings } from '../App';
+import { EmailService } from '../services/EmailService';
 import '../signature-pad.css';
 
 // --- SIGNATURE PAD COMPONENT ---
@@ -132,6 +135,9 @@ const SignaturePage: React.FC = () => {
     const [agreed, setAgreed] = useState(false);
     const [typedName, setTypedName] = useState('');
     const [signatureData, setSignatureData] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [pdfGenerated, setPdfGenerated] = useState(false);
+    const [emailSent, setEmailSent] = useState(false);
 
     useEffect(() => {
         if (!bookingId) return;
@@ -143,13 +149,173 @@ const SignaturePage: React.FC = () => {
         }
     }, [bookingId, getBookingById]);
 
-    const handleSubmit = () => {
+    const generatePDF = async (signedBooking: Booking, unitName: string): Promise<string> => {
+        // Create a temporary div for PDF content
+        const pdfContent = document.createElement('div')
+        pdfContent.style.cssText = `
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            background: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            direction: rtl;
+        `
+
+        const formatDate = (date: Date) => {
+            return new Intl.DateTimeFormat('he-IL', {
+                year: 'numeric',
+                month: 'long', 
+                day: 'numeric'
+            }).format(date)
+        }
+
+        // Create PDF HTML content
+        pdfContent.innerHTML = `
+            <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #333; padding-bottom: 20px;">
+                <h1 style="font-size: 28px; margin: 0; font-weight: bold;">אישור הזמנה והסכם אירוח</h1>
+                <h2 style="font-size: 20px; margin: 10px 0 0 0; color: #666;">אחוזת שטרן</h2>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <p style="font-size: 16px; margin-bottom: 20px;">
+                    שלום ${signedBooking.customer.fullName},<br/>
+                    שמחנו לקבל את הזמנתכם לאירוח באחוזת שטרן. להלן פרטי ההזמנה והתנאים שאושרו על ידכם:
+                </p>
+            </div>
+
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <h3 style="font-size: 18px; font-weight: bold; margin: 0 0 15px 0;">פרטי ההזמנה:</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <p style="margin: 5px 0;"><strong>מספר הזמנה:</strong><br/>${signedBooking.id}</p>
+                    <p style="margin: 5px 0;"><strong>שם האורח:</strong><br/>${signedBooking.customer.fullName}</p>
+                    <p style="margin: 5px 0;"><strong>יחידת האירוח:</strong><br/>${unitName}</p>
+                    <p style="margin: 5px 0;"><strong>תאריך כניסה:</strong><br/>${formatDate(signedBooking.startDate)} (החל מ-15:00)</p>
+                    <p style="margin: 5px 0;"><strong>תאריך יציאה:</strong><br/>${formatDate(signedBooking.endDate)} (עד 11:00)</p>
+                    <p style="margin: 5px 0;"><strong>מספר אורחים:</strong><br/>${signedBooking.adults} מבוגרים, ${signedBooking.children} ילדים</p>
+                </div>
+            </div>
+
+            <h4 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0;">תנאי התשלום:</h4>
+            <p style="margin-bottom: 20px;">
+                <strong>סה"כ עלות האירוח:</strong> ${signedBooking.price.toLocaleString()} ₪<br/>
+                יתרת התשלום תתבצע עם ההגעה למתחם באמצעי התשלום הבאים: אשראי / מזומן / העברה בנקאית.
+            </p>
+
+            <div style="border-top: 2px solid #333; padding-top: 20px; margin-top: 40px;">
+                <h4 style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">הצהרת האורח וחתימה:</h4>
+                <p style="margin-bottom: 15px;">אני מאשר/ת שקראתי והבנתי את כל תנאי ההסכם.</p>
+                
+                <div style="display: flex; justify-content: space-between; align-items: end; margin-top: 30px;">
+                    <div style="flex: 1;">
+                        <p style="margin: 0;"><strong>שם מלא:</strong> ${signedBooking.customer.fullName}</p>
+                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">תאריך חתימה: ${formatDate(signedBooking.signedDate || new Date())}</p>
+                    </div>
+                    <div style="flex: 0 0 200px; text-align: center;">
+                        <div style="border: 1px solid #333; height: 80px; width: 200px; margin: 0 auto; background: white; display: flex; align-items: center; justify-content: center;">
+                            ${signedBooking.signature ? `<img src="${signedBooking.signature}" style="max-width: 190px; max-height: 70px;" />` : '<span style="color: #999;">חתימה</span>'}
+                        </div>
+                        <p style="margin: 5px 0 0 0; font-size: 12px;">חתימת האורח</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
+                <p>מסמך זה נוצר אוטומטית על ידי מערכת ניהול אחוזת שטרן</p>
+                <p>לפניות: info@stern-mansion.co.il | 052-1234567</p>
+            </div>
+        `
+
+        document.body.appendChild(pdfContent)
+
+        // Wait for images to load
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        // Convert to canvas
+        const canvas = await html2canvas(pdfContent, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: 1123,
+        })
+
+        // Create PDF
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        })
+
+        const imgData = canvas.toDataURL('image/png')
+        const imgWidth = 210
+        const pageHeight = 297
+        const imgHeight = (canvas.height * imgWidth) / canvas.width
+        let heightLeft = imgHeight
+        let position = 0
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+
+        // Add additional pages if needed
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight
+            pdf.addPage()
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+            heightLeft -= pageHeight
+        }
+
+        // Clean up
+        document.body.removeChild(pdfContent)
+
+        return pdf.output('datauristring')
+    }
+
+    const handleSubmit = async () => {
         if (!booking || !agreed || !typedName.trim() || !signatureData) {
             alert("יש למלא את כל השדות, לסמן הסכמה ולחתום.");
             return;
         }
-        updateBooking({ ...booking, status: BookingStatus.Confirmed, signature: signatureData, signedDate: new Date() });
-        setIsSigned(true);
+
+        setIsProcessing(true);
+        
+        try {
+            // Update booking first
+            const signedBooking = { 
+                ...booking, 
+                status: BookingStatus.Confirmed, 
+                signature: signatureData, 
+                signedDate: new Date() 
+            };
+            
+            await updateBooking(signedBooking);
+            
+            // Generate PDF
+            const unitName = units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה';
+            const pdfDataUrl = await generatePDF(signedBooking, unitName);
+            setPdfGenerated(true);
+            
+            // Send email if configured
+            if (EmailService.isConfigured()) {
+                const emailSuccess = await EmailService.sendConfirmationEmail(signedBooking, unitName, pdfDataUrl);
+                setEmailSent(emailSuccess);
+            }
+            
+            setIsSigned(true);
+            
+        } catch (error) {
+            console.error('Error processing signature:', error);
+            alert('אירעה שגיאה בעיבוד החתימה. אנא נסו שוב.');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     if (!booking) {
@@ -159,12 +325,38 @@ const SignaturePage: React.FC = () => {
     if (isSigned) {
         return (
              <div className="flex items-center justify-center min-h-screen bg-base-200 p-4">
-                <div className="card bg-base-100 shadow-xl text-center">
+                <div className="card bg-base-100 shadow-xl text-center max-w-md">
                     <div className="card-body items-center">
                         <i className="fa-solid fa-circle-check text-success text-5xl mb-4"></i>
                         <h1 className="card-title text-2xl">תודה רבה, {booking.customer.fullName}!</h1>
                         <p className="mt-2">הזמנתך אושרה בהצלחה.</p>
-                        <p className="text-sm text-base-content/70">עותק חתום של ההסכם יישלח אלייך למייל. נתראה בקרוב!</p>
+                        
+                        <div className="mt-4 space-y-2 text-sm">
+                            {pdfGenerated && (
+                                <div className="flex items-center justify-center gap-2 text-success">
+                                    <i className="fa-solid fa-file-pdf"></i>
+                                    <span>PDF נוצר בהצלחה</span>
+                                </div>
+                            )}
+                            
+                            {EmailService.isConfigured() ? (
+                                <div className="flex items-center justify-center gap-2 text-success">
+                                    <i className="fa-solid fa-envelope"></i>
+                                    <span>{emailSent ? 'מייל נשלח בהצלחה' : 'שולח מייל...'}</span>
+                                </div>
+                            ) : (
+                                <div className="text-warning text-xs">
+                                    שירות המייל לא מוגדר - פנו למנהל
+                                </div>
+                            )}
+                        </div>
+                        
+                        <p className="text-sm text-base-content/70 mt-4">
+                            {EmailService.isConfigured() ? 
+                                'עותק חתום של ההסכם נשלח למייל. נתראה בקרוב!' :
+                                'צרו קשר עם אחוזת שטרן לקבלת המסמך. נתראה בקרוב!'
+                            }
+                        </p>
                     </div>
                 </div>
             </div>
@@ -208,9 +400,19 @@ const SignaturePage: React.FC = () => {
                             </div>
                         </div>
                         <div className="card-actions justify-center mt-6 sm:mt-8">
-                            <button onClick={handleSubmit} disabled={!agreed || !typedName.trim() || !signatureData} 
-                                    className="btn btn-success btn-lg w-full sm:w-auto text-white text-base sm:text-lg px-8">
-                                אשר וחתום על ההזמנה
+                            <button 
+                                onClick={handleSubmit} 
+                                disabled={!agreed || !typedName.trim() || !signatureData || isProcessing} 
+                                className="btn btn-success btn-lg w-full sm:w-auto text-white text-base sm:text-lg px-8"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <span className="loading loading-spinner loading-sm ml-2"></span>
+                                        מעבד חתימה...
+                                    </>
+                                ) : (
+                                    'אשר וחתום על ההזמנה'
+                                )}
                             </button>
                         </div>
                     </main>
