@@ -30,6 +30,7 @@ export interface Booking {
   internalNotes?: string;
   signature?: string; // base64 data URL
   signedDate?: Date;
+  pdfUrl?: string; // URL to download signed PDF from server
 }
 
 export interface BlockedDate {

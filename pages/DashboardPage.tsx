@@ -167,25 +167,70 @@ const BookingDetails: React.FC<{ booking: Booking, onEdit: () => void, onClose: 
         return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(signatureLink)}`;
     };
     
-    // PDF download function
+    // PDF download function - downloads from server
     const downloadPDF = async () => {
-        if (!booking.signature) return;
+        console.log('Download PDF clicked:', {
+            hasSignature: !!booking.signature,
+            bookingId: booking.id,
+            customerName: booking.customer?.fullName,
+            hasPdfUrl: !!booking.pdfUrl
+        });
+        
+        if (!booking.signature) {
+            console.warn('No signature found for booking:', booking.id);
+            alert('לא נמצאה חתימה עבור הזמנה זו');
+            return;
+        }
         
         setIsDownloadingPDF(true);
         try {
-            const unitName = units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה';
-            const pdfDataUrl = await generateSimplePDF(booking, unitName, true);
-            
-            // Create download link
-            const link = document.createElement('a');
-            link.href = pdfDataUrl;
-            link.download = `הזמנה_${booking.customer.fullName}_${booking.id}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (booking.pdfUrl) {
+                // Download from saved URL
+                console.log('Downloading PDF from server:', booking.pdfUrl);
+                
+                const link = document.createElement('a');
+                link.href = booking.pdfUrl;
+                link.download = `הזמנה_${booking.customer.fullName}_${booking.id}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                console.log('PDF download initiated from server');
+            } else {
+                // Fallback: generate PDF on-the-fly (for old bookings without saved PDF)
+                console.log('No saved PDF URL found, generating PDF as fallback...');
+                const unitName = units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה';
+                
+                const pdfDataUrl = await generateSimplePDF(booking, unitName, true);
+                console.log('Fallback PDF generated successfully');
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.href = pdfDataUrl;
+                link.download = `הזמנה_${booking.customer.fullName}_${booking.id}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                console.log('Fallback PDF download initiated');
+            }
         } catch (error) {
             console.error('Error downloading PDF:', error);
-            alert('שגיאה בהורדת המסמך. אנא נסו שוב.');
+            console.error('Error details:', {
+                message: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined
+            });
+            
+            // Provide more specific error message
+            let errorMessage = 'שגיאה בהורדת המסמך';
+            if (error instanceof Error) {
+                if (error.message.includes('404')) {
+                    errorMessage = 'הקובץ לא נמצא בשרת. אנא נסו לחתום שוב על ההסכם.';
+                } else {
+                    errorMessage += `: ${error.message}`;
+                }
+            }
+            alert(`${errorMessage}. אנא נסו שוב.`);
         } finally {
             setIsDownloadingPDF(false);
         }

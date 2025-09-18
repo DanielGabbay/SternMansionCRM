@@ -172,7 +172,7 @@ const SignaturePage: React.FC = () => {
             await updateBooking(signedBooking);
             console.log('Booking updated successfully');
             
-            // Generate PDF
+            // Generate and save PDF
             console.log('Generating PDF...');
             const unitName = units.find(u => u.id === booking.unitId)?.name || 'יחידה לא ידועה';
             
@@ -185,6 +185,38 @@ const SignaturePage: React.FC = () => {
                 pdfDataUrl = await generateSimplePDF(signedBooking, unitName, false); // Uncompressed fallback
                 console.log('Uncompressed simple PDF generated successfully');
             }
+            
+            // Save PDF to server
+            console.log('Saving PDF to server...');
+            try {
+                const savePDFResponse = await fetch('/api/save-pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        bookingId: signedBooking.id,
+                        customerName: signedBooking.customer.fullName,
+                        pdfData: pdfDataUrl
+                    })
+                });
+                
+                if (savePDFResponse.ok) {
+                    const saveResult = await savePDFResponse.json();
+                    console.log('PDF saved to server successfully:', saveResult);
+                    
+                    // Update booking with PDF URL
+                    signedBooking.pdfUrl = saveResult.downloadUrl;
+                    await updateBooking(signedBooking);
+                    console.log('Booking updated with PDF URL');
+                } else {
+                    console.error('Failed to save PDF to server:', savePDFResponse.statusText);
+                }
+            } catch (saveError) {
+                console.error('Error saving PDF to server:', saveError);
+                // Continue with email sending even if PDF save fails
+            }
+            
             setPdfGenerated(true);
             
             // Send email if configured

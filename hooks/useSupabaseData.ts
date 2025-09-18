@@ -21,6 +21,7 @@ const dbBookingToBooking = (dbBooking: any): Booking => ({
   internalNotes: dbBooking.internal_notes,
   signature: dbBooking.signature,
   signedDate: dbBooking.signed_date ? new Date(dbBooking.signed_date) : undefined,
+  pdfUrl: dbBooking.pdf_url,
 })
 
 const bookingToDbBooking = (booking: Omit<Booking, 'id'>) => ({
@@ -38,6 +39,7 @@ const bookingToDbBooking = (booking: Omit<Booking, 'id'>) => ({
   internal_notes: booking.internalNotes,
   signature: booking.signature,
   signed_date: booking.signedDate?.toISOString(),
+  pdf_url: booking.pdfUrl,
 })
 
 const dbBlockedDateToBlockedDate = (dbBlockedDate: any): BlockedDate => ({
@@ -235,7 +237,8 @@ export const useSupabaseData = () => {
               ...booking,
               startDate: booking.startDate.toISOString(),
               endDate: booking.endDate.toISOString(),
-              signedDate: booking.signedDate?.toISOString()
+              signedDate: booking.signedDate?.toISOString(),
+              pdfUrl: booking.pdfUrl
             }
           }
           return b
@@ -266,7 +269,8 @@ export const useSupabaseData = () => {
               ...booking,
               startDate: booking.startDate.toISOString(),
               endDate: booking.endDate.toISOString(),
-              signedDate: booking.signedDate?.toISOString()
+              signedDate: booking.signedDate?.toISOString(),
+              pdfUrl: booking.pdfUrl
             }
           }
           return b
@@ -295,7 +299,8 @@ export const useSupabaseData = () => {
               ...booking,
               startDate: booking.startDate.toISOString(),
               endDate: booking.endDate.toISOString(),
-              signedDate: booking.signedDate?.toISOString()
+              signedDate: booking.signedDate?.toISOString(),
+              pdfUrl: booking.pdfUrl
             }
           }
           return b

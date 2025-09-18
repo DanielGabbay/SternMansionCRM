@@ -31,6 +31,16 @@ export default async function handler(
     if (!booking || !pdfData) {
       return response.status(400).json({ error: 'Missing required data' });
     }
+    
+    // Validate booking data
+    if (!booking.customer || !booking.customer.email || booking.customer.email.trim() === '') {
+      console.error('Invalid booking data:', {
+        hasCustomer: !!booking.customer,
+        email: booking.customer?.email,
+        booking: booking
+      });
+      return response.status(400).json({ error: 'Customer email is required' });
+    }
 
     // Validate environment variables
     const emailConfig = {

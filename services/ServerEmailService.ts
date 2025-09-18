@@ -26,12 +26,26 @@ export class ServerEmailService {
     try {
       console.log('Sending email via server-side function...');
       
+      // Debug booking data
+      console.log('Original booking data:', {
+        id: booking.id,
+        customerEmail: booking.customer?.email,
+        customerFullName: booking.customer?.fullName,
+        hasCustomer: !!booking.customer
+      });
+      
+      // Validate email before sending
+      if (!booking.customer?.email || booking.customer.email.trim() === '') {
+        console.error('Customer email is missing or empty:', booking.customer);
+        throw new Error('Customer email is required');
+      }
+      
       // Prepare booking data for the server
       const bookingData = {
         id: booking.id,
         customer: {
           fullName: booking.customer.fullName,
-          email: booking.customer.email,
+          email: booking.customer.email.trim(),
           phone: booking.customer.phone,
         },
         startDate: booking.startDate.toISOString(),
@@ -41,6 +55,8 @@ export class ServerEmailService {
         adults: booking.adults,
         children: booking.children,
       };
+      
+      console.log('Prepared booking data for server:', bookingData);
 
       // Send POST request to Vercel function
       const response = await fetch(`${this.baseUrl}/api/send-email`, {

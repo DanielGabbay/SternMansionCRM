@@ -25,6 +25,7 @@ CREATE TABLE bookings (
   internal_notes TEXT,
   signature TEXT, -- base64 data URL
   signed_date TIMESTAMP WITH TIME ZONE,
+  pdf_url TEXT, -- URL to download signed PDF from server
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
