@@ -58,7 +58,7 @@ export default async function handler(
     }
 
     // Create transporter
-    const transporter = nodemailer.createTransporter(emailConfig);
+    const transporter = nodemailer.createTransport(emailConfig);
 
     // Convert base64 PDF to buffer
     const pdfBuffer = Buffer.from(pdfData.split(',')[1] || pdfData, 'base64');
